@@ -17,12 +17,16 @@ change production data.
 - **The federation trusts numeric ids, not names.** The provider only accepts tokens whose
   `repository_id` and `repository_owner_id` match this repository, so a repository that later
   takes the same name gets nothing.
+- **Bindings use GitHub's immutable OIDC subjects.** This repository's tokens carry
+  `repo:anuarthr@131203976/car-environmental-complaints@1447489910:<context>`, ids included, not
+  the classic `repo:<owner>/<repo>:<context>`. The bootstrap script reads the prefix from the
+  GitHub API and stops if the repository ever switches to a custom template.
 - **Two service accounts, each bound to one kind of job:**
 
   | Service account | Who can use it | Reads | Writes |
   |---|---|---|---|
-  | `ci-dbt` | Jobs triggered by pull requests (subject `repo:<repo>:pull_request`) | `raw` | `ci` |
-  | `pipeline` | Jobs in the GitHub environment `production`, which only `main` can deploy to | `raw`, `prod` | `raw`, `prod` |
+  | `ci-dbt` | Jobs triggered by pull requests (`<subject prefix>:pull_request`) | `raw` | `ci` |
+  | `pipeline` | Jobs in the GitHub environment `production`, which only `main` can deploy to (`<subject prefix>:environment:production`) | `raw`, `prod` | `raw`, `prod` |
 
 - **Permissions are granted per dataset** with BigQuery DCL (`GRANT ... ON SCHEMA`). At project
   level both accounts only hold `roles/bigquery.jobUser`, which lets them run jobs. The `dev`

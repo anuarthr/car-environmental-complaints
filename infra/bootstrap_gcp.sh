@@ -141,14 +141,24 @@ if ! gcloud iam workload-identity-pools providers describe "$PROVIDER" --project
     --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id" \
     --attribute-condition="assertion.repository_id == '${REPO_ID}' && assertion.repository_owner_id == '${OWNER_ID}'"
 fi
+# The subject GitHub puts in this repository's OIDC tokens. With immutable subjects it embeds
+# the same ids (repo:<owner>@<owner_id>/<repo>@<repo_id>), so read it instead of assuming it.
+OIDC_SUB_API="repos/${GITHUB_REPO}/actions/oidc/customization/sub"
+if [ "$(value gh api "$OIDC_SUB_API" --jq .use_default)" != true ]; then
+  echo "This script expects GitHub's default OIDC subject template." >&2
+  exit 1
+fi
+SUBJECT_PREFIX="$(value gh api "$OIDC_SUB_API" --jq '.sub_claim_prefix // empty')"
+SUBJECT_PREFIX="${SUBJECT_PREFIX:-repo:${GITHUB_REPO}}"
 POOL_NAME="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}"
 retry gcloud iam service-accounts add-iam-policy-binding "$CI_SA" --project="$PROJECT_ID" \
   --role=roles/iam.workloadIdentityUser --format=none \
-  --member="principal://iam.googleapis.com/${POOL_NAME}/subject/repo:${GITHUB_REPO}:pull_request"
+  --member="principal://iam.googleapis.com/${POOL_NAME}/subject/${SUBJECT_PREFIX}:pull_request"
 retry gcloud iam service-accounts add-iam-policy-binding "$PIPELINE_SA" --project="$PROJECT_ID" \
   --role=roles/iam.workloadIdentityUser --format=none \
-  --member="principal://iam.googleapis.com/${POOL_NAME}/subject/repo:${GITHUB_REPO}:environment:production"
-echo "pull requests -> ci-dbt | environment production -> pipeline"
+  --member="principal://iam.googleapis.com/${POOL_NAME}/subject/${SUBJECT_PREFIX}:environment:production"
+echo "${SUBJECT_PREFIX}:pull_request -> ci-dbt"
+echo "${SUBJECT_PREFIX}:environment:production -> pipeline"
 
 step "GitHub environment 'production', deployable only from main"
 gh api --method PUT "repos/${GITHUB_REPO}/environments/production" \
