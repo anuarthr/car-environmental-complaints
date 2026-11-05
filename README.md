@@ -23,6 +23,16 @@ Corporación Autónoma Regional de Cundinamarca (CAR), Colombia, between 2009 an
 | Orchestration and CI | GitHub Actions |
 | Dashboard | Looker Studio |
 
+## Development
+
+Requires [uv](https://docs.astral.sh/uv/). It installs Python 3.12 and the locked dependencies.
+
+```bash
+uv sync --locked
+uv run pytest
+uv run ruff format --check . && uv run ruff check .
+```
+
 ## Data source and license
 
 - **Quejas Ambientales CAR Cundinamarca**, published by CAR on
