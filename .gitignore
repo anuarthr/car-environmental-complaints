@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+logs/
+
+# dlt (local state and secrets)
+.dlt/secrets.toml
+
+# Credentials: never commit them. CI authenticates with Workload Identity Federation.
+.env
+.env.*
+*.pem
+*-key.json
+credentials*.json
+gha-creds-*.json
+application_default_credentials.json
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
