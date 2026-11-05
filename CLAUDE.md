@@ -57,5 +57,16 @@ uv run ruff check .          # lint
 
 - CI authenticates with Workload Identity Federation; local work uses
   `gcloud auth application-default login`. **Never create or commit service account keys.**
+- Google Cloud project `car-complaints-elt`, BigQuery datasets `raw`, `dev`, `ci` and `prod` in
+  `US`. The access model is in `docs/adr/0002-cloud-access.md`:
+  - `ci-dbt` serves pull requests: it reads `raw` and writes `ci`.
+  - `pipeline` serves the `production` environment, deployable only from `main`: it writes
+    `raw` and `prod`.
+  - Workflows read the ids from repository variables: `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`,
+    `GCP_CI_SERVICE_ACCOUNT` and `GCP_PIPELINE_SERVICE_ACCOUNT`.
+- Every cloud resource comes from `infra/bootstrap_gcp.sh`, which is safe to run again. Change
+  the script and run it; never configure resources by hand in the console.
+- On Windows, call `gcloud` and `bq` through the SDK's Python as the script header shows: the
+  `.cmd` wrappers break arguments that contain spaces.
 - Develop against the `dev` target. Never run against `prod` from a laptop.
 - Keep `maximum_bytes_billed` in every dbt profile.
