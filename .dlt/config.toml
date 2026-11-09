@@ -3,3 +3,7 @@
 
 [runtime]
 dlthub_telemetry = false
+
+[destination.bigquery]
+location = "US"
+project_id = "car-complaints-elt"
