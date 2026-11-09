@@ -1,0 +1,5 @@
+# dlt settings that are safe to publish. Credentials never go here: locally dlt uses Application
+# Default Credentials, and GitHub Actions uses Workload Identity Federation.
+
+[runtime]
+dlthub_telemetry = false
