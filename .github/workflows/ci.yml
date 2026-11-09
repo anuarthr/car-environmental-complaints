@@ -36,6 +36,70 @@ jobs:
       - name: Test
         run: uv run pytest
 
+  shell:
+    name: Shell scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: ShellCheck
+        run: shellcheck infra/*.sh
+
+  cloud-access:
+    name: Cloud access (least privilege)
+    # Pull requests from forks and from Dependabot get no OIDC token, so they skip this check.
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 300s
+          create_credentials_file: false
+
+      - name: The pull request identity reaches raw and ci, never prod or dev
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          status() {
+            curl --silent --output /dev/null --write-out '%{http_code}' \
+              --header "Authorization: Bearer ${TOKEN}" \
+              "https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT}/datasets/$1"
+          }
+          allowed() {
+            local code
+            code="$(status "$1")"
+            echo "$1: HTTP ${code}"
+            [ "$code" = 200 ] || { echo "::error::$1 should be reachable, got HTTP ${code}"; exit 1; }
+          }
+          denied() {
+            local code
+            code="$(status "$1")"
+            echo "$1: HTTP ${code}"
+            case "$code" in
+              403 | 404) ;;
+              *) echo "::error::$1 should be denied, got HTTP ${code}"; exit 1 ;;
+            esac
+          }
+          allowed raw
+          allowed ci
+          denied prod
+          denied dev
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest
