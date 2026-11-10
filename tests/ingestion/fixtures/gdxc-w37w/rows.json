@@ -1,0 +1,29 @@
+[
+  {
+    "cod_dpto": "05",
+    "dpto": "ANTIOQUIA",
+    "cod_mpio": "05001",
+    "nom_mpio": "MEDELLÍN",
+    "tipo_municipio": "Municipio",
+    "longitud": "-75,581775",
+    "latitud": "6,246631"
+  },
+  {
+    "cod_dpto": "05",
+    "dpto": "ANTIOQUIA",
+    "cod_mpio": "05002",
+    "nom_mpio": "ABEJORRAL",
+    "tipo_municipio": "Municipio",
+    "longitud": "-75,428739",
+    "latitud": "5,789315"
+  },
+  {
+    "cod_dpto": "05",
+    "dpto": "ANTIOQUIA",
+    "cod_mpio": "05004",
+    "nom_mpio": "ABRIAQUÍ",
+    "tipo_municipio": "Municipio",
+    "longitud": "-76,064304",
+    "latitud": "6,632282"
+  }
+]

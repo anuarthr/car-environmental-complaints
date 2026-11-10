@@ -1,0 +1,131 @@
+{
+  "id": "5ddb-j9e9",
+  "name": "Quejas Ambientales CAR Cundinamarca",
+  "rowsUpdatedAt": 1769014604,
+  "columns": [
+    {
+      "fieldName": "item",
+      "dataTypeName": "number"
+    },
+    {
+      "fieldName": "fecha_radicaci_n",
+      "dataTypeName": "calendar_date"
+    },
+    {
+      "fieldName": "a_o",
+      "dataTypeName": "number"
+    },
+    {
+      "fieldName": "mes",
+      "dataTypeName": "number"
+    },
+    {
+      "fieldName": "tipo_petici_n",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "canal",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "usuario",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "fecha_vencimiento",
+      "dataTypeName": "calendar_date"
+    },
+    {
+      "fieldName": "tipo_respuesta",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "fecha_respuesta_final",
+      "dataTypeName": "calendar_date"
+    },
+    {
+      "fieldName": "dependencia_principal",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "color_estado",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "estado_respuesta",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "municipio",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "vereda",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "finaliz_en",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "visita",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "visita_existencia_afectacion",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "suelo",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "flora",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "fauna",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "aire",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "agua",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "serie",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "subserie",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "estado_actual",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "tipo_persona",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "atenci_n_preferencial",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "riesgo_salud_u_otros",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "proceso_especial",
+      "dataTypeName": "text"
+    },
+    {
+      "fieldName": "tema",
+      "dataTypeName": "text"
+    }
+  ]
+}

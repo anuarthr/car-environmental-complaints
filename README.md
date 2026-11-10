@@ -33,6 +33,25 @@ uv run pytest
 uv run ruff format --check . && uv run ruff check .
 ```
 
+Tests run against recorded API responses and a local DuckDB file, so they need neither the
+network nor Google Cloud.
+
+## Ingestion
+
+`ingestion/` loads both datasets into BigQuery with dlt. A run checks each dataset's release
+timestamp on datos.gov.co and downloads it only when a new release is out. Each release is
+appended to the raw layer next to the earlier ones, so a run without a new release loads
+nothing. The reasons are in [ADR 0003](docs/adr/0003-raw-ingestion.md).
+
+| Who runs it | Command | Loads into |
+|---|---|---|
+| You, on a laptop | `uv run python -m ingestion.pipeline` | `dev` |
+| The [Pipeline workflow](.github/workflows/pipeline.yml), on Mondays and on demand, from `main` only | `uv run python -m ingestion.pipeline --dataset raw` | `raw` |
+
+A local run uses your Application Default Credentials (`gcloud auth application-default login`).
+To load into your own Google Cloud project, change `project_id` in `.dlt/config.toml`; dlt
+creates the dataset if it does not exist.
+
 ## Data source and license
 
 - **Quejas Ambientales CAR Cundinamarca**, published by CAR on

@@ -1,0 +1,49 @@
+name: Pipeline
+
+on:
+  # CAR replaces its dataset once a year, so a weekly check is enough, and a run that finds no new
+  # release loads nothing. The minute is off the hour because GitHub delays runs scheduled on it.
+  schedule:
+    - cron: "23 11 * * 1" # Mondays, 06:23 in Bogotá
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Two loads must never write raw at the same time, and a load cut short is worse than one that
+# waits, so a second run queues behind the first instead of cancelling it.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  load:
+    name: Load raw
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only main can deploy to production, and only jobs in production can act as the pipeline
+    # service account (docs/adr/0002-cloud-access.md).
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install the locked environment without the dev tools
+        run: uv sync --locked --no-dev
+
+      # Writes a credentials file that exchanges GitHub's OIDC token for short-lived Google
+      # credentials. dlt finds it through Application Default Credentials, as it does on a laptop.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_PIPELINE_SERVICE_ACCOUNT }}
+
+      # The runner starts empty, so dlt reads each dataset's last loaded release back from raw.
+      - name: Load the datos.gov.co datasets into raw
+        run: uv run --no-sync python -m ingestion.pipeline --dataset raw
