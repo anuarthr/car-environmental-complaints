@@ -42,14 +42,18 @@ uv run ruff check .          # lint
 - The source is published under CC BY-SA 4.0 and is anonymized. Never try to re-identify
   anyone, and keep the attribution in the README.
 - Never commit raw extracts. Test fixtures are small, recorded API responses.
-- Known quirks of the source, measured on 2026-11-05. Re-measure before relying on them, since
-  CAR may have published a new release:
-  - CAR publishes once a year and replaces the whole dataset: every row was created on
-    2026-01-21. New releases are detected from `rowsUpdatedAt`, never by reloading blindly.
+- Known quirks of the source, measured on 2026-11-10 against the release CAR published that
+  day. Re-measure before relying on them, since CAR may have published a new release:
+  - CAR replaces the whole dataset when it publishes: all 75,240 rows of the current release
+    were created on 2026-11-10, and the previous release came out on 2026-01-21. New releases
+    are detected from `rowsUpdatedAt`, never by reloading blindly.
+  - A release can rewrite the past: the one of 2026-11-10 added 6,289 complaints from 2025, and
+    also changed complaints from earlier years.
   - There are no empty cells, but there are disguised nulls: `Sin datos` in `visita`,
-    `finaliz_en`, `serie` and other columns.
+    `finaliz_en`, `serie` and other columns, and `No verificado` in `municipio` and `vereda`
+    (7,860 rows, new in the release of 2026-11-10).
   - `tema` contains non-breaking spaces (`\xa0`).
-  - 196 answers are dated before their filing date, and 30 deadlines fall before it.
+  - 198 answers are dated before their filing date, and 30 deadlines fall before it.
   - Municipalities come as names without a department, so joining them to DIVIPOLA needs a
     curated mapping.
 
