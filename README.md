@@ -1,7 +1,8 @@
 # CAR Environmental Complaints
 
-End-to-end ELT pipeline and analysis of the **68,948 environmental complaints** filed with the
-Corporación Autónoma Regional de Cundinamarca (CAR), Colombia, between 2009 and 2024.
+End-to-end ELT pipeline and analysis of the environmental complaints filed with the
+Corporación Autónoma Regional de Cundinamarca (CAR), Colombia. The release CAR published on
+2026-11-10 holds **75,240 complaints** filed from 2009 to 2025.
 
 > Work in progress. The project is being built in public, one milestone at a time.
 

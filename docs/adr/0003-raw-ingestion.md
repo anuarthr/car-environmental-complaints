@@ -5,8 +5,10 @@
 
 ## Context
 
-CAR publishes its complaints on datos.gov.co once a year by replacing the whole dataset: every
-row of the current release was created on 2026-01-21. DANE's DIVIPOLA table changes rarely too.
+CAR publishes its complaints on datos.gov.co by replacing the whole dataset, months apart: the
+last two releases came out on 2026-01-21 and 2026-11-10, and every row of a release is created
+the day it is published. A release can also change complaints from earlier years. DANE's
+DIVIPOLA table changes rarely too.
 The Socrata API serves every field as text, strips accents from field names
 (`fecha_radicaci_n`, `a_o`) and returns at most 50,000 rows per request.
 
@@ -42,7 +44,7 @@ datasets (ADR 0002).
 
 | Alternative | Why not |
 |---|---|
-| `replace` on every new release | Keeps only the latest release, so yearly history is lost, and a week that skips the download would leave the table empty. |
+| `replace` on every new release | Keeps only the latest release, so the history of releases is lost, and a week that skips the download would leave the table empty. |
 | `merge` on a key | Keeps one version of each row, so earlier releases are lost, and dlt needs a `raw_staging` dataset that the `pipeline` account cannot create. |
 | Detect a new release by hashing rows or comparing counts | Needs the whole dataset every week. `rowsUpdatedAt` answers the same question with one metadata request. |
 | Keep dlt's state in the GitHub Actions cache or in an artifact | Caches unused for 7 days are evicted and artifacts expire, so the state could drift from what the warehouse holds. |
@@ -50,8 +52,8 @@ datasets (ADR 0002).
 
 ## Consequences
 
-- `raw` grows by one release a year, about 69,000 complaint rows. Keeping them all costs almost
-  nothing and lets the project compare releases.
+- `raw` grows by a full copy of the dataset with every release, about 75,000 complaint rows
+  today. Keeping them all costs almost nothing and lets the project compare releases.
 - A load that fails halfway can leave rows in a data table, and the next run loads that release
   again, because dlt restores state only from loads it marked complete in `_dlt_loads`. Staging
   must therefore keep only rows whose `_dlt_load_id` is complete in `_dlt_loads`, and of those
@@ -59,5 +61,6 @@ datasets (ADR 0002).
 - A change in the source's columns fails the run before any row is downloaded. Someone has to
   review it, update `ingestion/datasets.py` and the staging model, and run the pipeline again.
 - GitHub disables scheduled workflows in public repositories after 60 days without activity.
-  Since CAR publishes once a year, check before its January release that the Pipeline workflow
-  is still enabled (`gh workflow enable pipeline.yml`), or start it by hand.
+  CAR's last two releases came about ten months apart, so after a quiet spell in the repository,
+  check that the Pipeline workflow is still enabled (`gh workflow enable pipeline.yml`), or
+  start it by hand.

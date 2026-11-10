@@ -1,6 +1,6 @@
 """Decide whether a dataset on datos.gov.co holds a release the pipeline has not loaded yet.
 
-CAR publishes its complaints once a year by replacing the whole dataset, so reloading on every
+CAR publishes its complaints by replacing the whole dataset, months apart, so reloading on every
 run would only duplicate rows. A run loads a dataset when its release timestamp moved forward.
 """
 
