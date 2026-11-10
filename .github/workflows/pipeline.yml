@@ -1,8 +1,9 @@
 name: Pipeline
 
 on:
-  # CAR replaces its dataset once a year, so a weekly check is enough, and a run that finds no new
-  # release loads nothing. The minute is off the hour because GitHub delays runs scheduled on it.
+  # CAR replaces its whole dataset months apart, so a weekly check is enough, and a run that finds
+  # no new release loads nothing. The minute is off the hour because GitHub delays runs scheduled
+  # on it.
   schedule:
     - cron: "23 11 * * 1" # Mondays, 06:23 in Bogotá
   workflow_dispatch:
