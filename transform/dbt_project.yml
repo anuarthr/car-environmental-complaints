@@ -1,0 +1,25 @@
+name: car_complaints
+version: "1.0.0"
+profile: car_complaints
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+
+clean-targets: ["target", "dbt_packages"]
+
+flags:
+  send_anonymous_usage_stats: false
+
+# Production is built only by the Pipeline workflow on main (docs/adr/0002-cloud-access.md).
+on-run-start:
+  - "{{ refuse_prod_outside_github_actions() }}"
+
+models:
+  car_complaints:
+    # Each target writes to a single dataset: the CI service account cannot create datasets, so
+    # layers are told apart by prefix (stg_, int_, fct_) instead of by dataset.
+    staging:
+      +materialized: view

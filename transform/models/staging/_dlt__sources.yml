@@ -1,0 +1,14 @@
+sources:
+  - name: dlt
+    description: "Bookkeeping that dlt writes next to the raw tables."
+    schema: raw
+    tables:
+      - name: _dlt_loads
+        description: >
+          One row per load that dlt finished. A load that fails halfway can leave rows in the
+          data tables but never appears here with status 0 (docs/adr/0003-raw-ingestion.md).
+        columns:
+          - name: load_id
+            description: "Matches _dlt_load_id in the data tables."
+          - name: status
+            description: "0 when every table of the load was written."
