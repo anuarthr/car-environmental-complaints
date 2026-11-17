@@ -9,7 +9,8 @@ exclude_rules = structure.column_order
 [sqlfluff:templater:dbt]
 project_dir = transform
 profiles_dir = transform
-target = dev
+# No target here: the templater opens a BigQuery connection, so it uses the profile's default
+# (dev) on a laptop, and CI sets DBT_ENGINE_TARGET=ci for the dataset its account can read.
 
 [sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = lower

@@ -100,6 +100,47 @@ jobs:
           denied prod
           denied dev
 
+  dbt:
+    name: Lint, build and test the models in ci
+    # Pull requests from forks and from Dependabot get no OIDC token, so they skip this job.
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install the locked environment
+        run: uv sync --locked
+
+      # The ci-dbt account reads raw and writes ci, nothing else (docs/adr/0002-cloud-access.md).
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SERVICE_ACCOUNT }}
+
+      # sqlfluff's dbt templater opens a BigQuery connection, so the lint runs here, where there
+      # are credentials, against the dataset this account can read.
+      - name: Lint the SQL
+        env:
+          DBT_ENGINE_TARGET: ci
+        run: uv run --no-sync sqlfluff lint transform --format github-annotation-native
+
+      - name: Build and test the models
+        working-directory: transform
+        run: uv run --no-sync dbt build --target ci
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest
