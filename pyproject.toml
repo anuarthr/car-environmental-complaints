@@ -6,6 +6,8 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "dbt-bigquery>=1.12.4",
+    "dbt-core>=1.12.7",
     "dlt[bigquery]>=1.32.0",
 ]
 
@@ -15,6 +17,8 @@ dev = [
     "pytest>=9.2.0",
     "requests-mock>=1.12.1",
     "ruff>=0.17.4",
+    "sqlfluff>=4.5.0",
+    "sqlfluff-templater-dbt>=4.5.0",
 ]
 
 [tool.ruff]
