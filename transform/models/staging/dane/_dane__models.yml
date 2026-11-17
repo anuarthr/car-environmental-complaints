@@ -1,0 +1,41 @@
+models:
+  - name: stg_dane__municipalities
+    description: >
+      One row per municipality in DANE's latest complete DIVIPOLA release. Names are not unique
+      across departments (there are four BUENAVISTA), so joins use the code.
+    columns:
+      - name: municipality_code
+        description: "DANE's five-digit code, text so its leading zero survives."
+        data_tests:
+          - unique
+          - not_null
+      - name: municipality_name
+        description: "Name as DANE writes it, uppercase with accents."
+        data_tests:
+          - not_null
+      - name: municipality_type
+        description: "Municipio, Área no municipalizada or Isla."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Municipio", "Área no municipalizada", "Isla"]
+      - name: department_code
+        description: "DANE's two-digit department code. Bogotá D.C. is its own department, 11."
+        data_tests:
+          - not_null
+      - name: department_name
+        description: "Department name as DANE writes it."
+        data_tests:
+          - not_null
+      - name: latitude
+        description: "Latitude of the municipal seat, in degrees."
+        data_tests:
+          - not_null
+      - name: longitude
+        description: "Longitude of the municipal seat, in degrees."
+        data_tests:
+          - not_null
+      - name: released_at
+        description: "When DANE published the release on datos.gov.co."
+        data_tests:
+          - not_null
