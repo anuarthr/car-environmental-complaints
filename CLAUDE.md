@@ -22,6 +22,8 @@ uv sync --locked             # install the locked environment
 uv run pytest                # run the test suite
 uv run ruff format .         # format
 uv run ruff check .          # lint
+uv run sqlfluff lint transform  # lint the dbt SQL (needs Google credentials)
+cd transform && uv run dbt build  # build and test the models in dev
 ```
 
 ## How work is done here
@@ -33,17 +35,20 @@ uv run ruff check .          # lint
 - **Branch names and commit messages in English**, Conventional Commits style (`feat:`, `fix:`,
   `test:`, `docs:`, `build:`, `ci:`, `chore:`). The body explains what changed and why.
 - **Comments explain business rules and decisions**, not language syntax.
+- **Profile before staging.** Run the `profile-source` skill on a raw table before writing or
+  changing its staging model, and after a new release.
 - **Hooks enforce the basics** (`.claude/settings.json`): every edited Python file is formatted
-  and linted with ruff, and a turn cannot end while the test suite fails. Fix the cause; never
-  work around a hook.
+  and linted with ruff, every edited dbt SQL file with sqlfluff, and a turn cannot end while the
+  test suite fails or the dbt project does not parse. Fix the cause; never work around a hook.
 
 ## Data rules
 
 - The source is published under CC BY-SA 4.0 and is anonymized. Never try to re-identify
   anyone, and keep the attribution in the README.
 - Never commit raw extracts. Test fixtures are small, recorded API responses.
-- Known quirks of the source, measured on 2026-11-10 against the release CAR published that
-  day. Re-measure before relying on them, since CAR may have published a new release:
+- Known quirks of the source, measured on 2026-11-10 and 2026-11-17 against the release CAR
+  published on 2026-11-10. Re-measure before relying on them, since CAR may have published a
+  new release:
   - CAR replaces the whole dataset when it publishes: all 75,240 rows of the current release
     were created on 2026-11-10, and the previous release came out on 2026-01-21. New releases
     are detected from `rowsUpdatedAt`, never by reloading blindly.
@@ -52,10 +57,18 @@ uv run ruff check .          # lint
   - There are no empty cells, but there are disguised nulls: `Sin datos` in `visita`,
     `finaliz_en`, `serie` and other columns, and `No verificado` in `municipio` and `vereda`
     (7,860 rows, new in the release of 2026-11-10).
+  - "Not applicable" comes as `No Aplica` and as `[No Aplica]`, and `riesgo_salud_u_otros` uses
+    `N.A` for a risk nobody assessed.
+  - The five resource columns (`agua`, `aire`, `fauna`, `flora`, `suelo`) hold `X` or
+    `Sin datos`, and three in four complaints have none marked (almost none before 2014), so an
+    unmarked resource is unknown. `tema` names the resource for every complaint.
+  - `a_o` and `mes` repeat the filing date, and `color_estado` repeats `estado_respuesta`.
   - `tema` contains non-breaking spaces (`\xa0`).
-  - 198 answers are dated before their filing date, and 30 deadlines fall before it.
+  - 198 answers are dated before their filing date, and 30 deadlines fall before it. One
+    deadline (`item` 63277, filed on 2024-02-09) falls on 2026-12-01.
   - Municipalities come as names without a department, so joining them to DIVIPOLA needs a
-    curated mapping.
+    curated mapping. DIVIPOLA repeats names across departments (four `BUENAVISTA`) and writes
+    coordinates with a decimal comma.
 
 ## Cloud rules
 
