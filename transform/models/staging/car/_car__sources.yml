@@ -23,3 +23,33 @@ sources:
             description: "rowsUpdatedAt of the release on datos.gov.co, when CAR published it."
           - name: _dlt_load_id
             description: "The dlt load that wrote the row. Complete loads are listed in _dlt_loads."
+          # Staging decodes these codes into booleans. A code it does not know would become
+          # null without a word, so a new one fails here instead.
+          - name: visita
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["SI", "NO", "Sin datos"]
+          - name: riesgo_salud_u_otros
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["SI", "NO", "N.A"]
+          - name: estado_respuesta
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["Respuesta en Terminos", "Respuesta Fuera de Terminos"]
+          - name: agua
+            data_tests: &resource_mark
+              - accepted_values:
+                  arguments:
+                    values: ["X", "Sin datos"]
+          - name: aire
+            data_tests: *resource_mark
+          - name: fauna
+            data_tests: *resource_mark
+          - name: flora
+            data_tests: *resource_mark
+          - name: suelo
+            data_tests: *resource_mark

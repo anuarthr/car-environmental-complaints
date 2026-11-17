@@ -1,0 +1,127 @@
+models:
+  - name: stg_car__complaints
+    description: >
+      One row per complaint in CAR's latest complete release, typed and cleaned. Text keeps
+      CAR's wording, with whitespace normalized; "Sin datos" and "No verificado" become null.
+      Values that differ only in an accent or in case (veredas, records subseries) are left as
+      published.
+    columns:
+      - name: complaint_id
+        description: "CAR's item number, unique within a release."
+        data_tests:
+          - unique
+          - not_null
+      - name: filed_on
+        description: "Date the complaint was filed."
+        data_tests:
+          - not_null
+      - name: due_on
+        description: >
+          Date the answer was due, as CAR recorded it. 30 deadlines in the release of
+          2026-11-10 fall before the filing date.
+        data_tests:
+          - not_null
+      - name: answered_on
+        description: >
+          Date of the final answer. 198 answers in the release of 2026-11-10 are dated before
+          the filing date.
+        data_tests:
+          - not_null
+      - name: petition_type
+        description: "Kind of petition: an environmental complaint, or one about offensive odors."
+        data_tests:
+          - not_null
+      - name: channel
+        description: "How the complaint reached CAR (letter, email, website, phone...)."
+        data_tests:
+          - not_null
+      - name: filer
+        description: >
+          How the published data names the filer: USUARIO ANONIMIZADO or ANONIMO. The source is
+          anonymized and carries no identity.
+        data_tests:
+          - not_null
+      - name: filer_type
+        description: "NATURAL (a person), JURIDICA (an organization) or INTERNO (CAR itself)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["NATURAL", "JURIDICA", "INTERNO"]
+      - name: preferential_attention
+        description: "Group entitled to preferential attention, or No Aplica."
+      - name: regional_office
+        description: "CAR office in charge of the complaint (dependencia principal)."
+        data_tests:
+          - not_null
+      - name: municipality_name
+        description: >
+          Municipality as CAR names it, without a department. Null when CAR did not record it or
+          did not verify it.
+      - name: vereda
+        description: "Rural district (vereda) as CAR names it, when recorded and verified."
+      - name: theme
+        description: "Complaint theme, which names the resource affected or says there are several."
+        data_tests:
+          - not_null
+      - name: concerns_water
+        description: &resource_mark >
+          True when CAR marked the resource. Null otherwise: most complaints have no resource
+          marked, so an unmarked one is unknown rather than unaffected. theme is the complete
+          source for the resource.
+        data_tests: &only_true
+          - accepted_values:
+              arguments:
+                values: [true]
+                quote: false
+      - name: concerns_air
+        description: *resource_mark
+        data_tests: *only_true
+      - name: concerns_fauna
+        description: *resource_mark
+        data_tests: *only_true
+      - name: concerns_flora
+        description: *resource_mark
+        data_tests: *only_true
+      - name: concerns_soil
+        description: *resource_mark
+        data_tests: *only_true
+      - name: poses_health_risk
+        description: "Whether the complaint poses a risk to health or other. Null when not assessed (N.A)."
+      - name: special_process
+        description: "Special process the complaint belongs to (Río Bogotá, Cerros Orientales...), or No Aplica."
+      - name: had_site_visit
+        description: "Whether CAR visited the site. Null when not recorded."
+      - name: visit_found_impact
+        description: "Whether the visit found environmental harm: SI, NO or DUDA (unsure)."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["SI", "NO", "DUDA"]
+      - name: answer_type
+        description: "De Fondo (a substantive answer), Parcial, Otra or Requerimiento."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["De Fondo", "Parcial", "Otra", "Requerimiento"]
+      - name: is_on_time_per_car
+        description: >
+          CAR's own label (estado_respuesta): true for Respuesta en Terminos. It agrees in every
+          row with answered_on <= due_on, so it inherits any error in those dates.
+        data_tests:
+          - not_null
+      - name: current_status
+        description: "Status of the complaint when CAR published the release."
+        data_tests:
+          - not_null
+      - name: closed_with
+        description: "How the complaint was closed (case opened, archived, sent elsewhere...)."
+      - name: records_series
+        description: "Records management series the complaint was filed under."
+      - name: records_subseries
+        description: "Records management subseries the complaint was filed under."
+      - name: released_at
+        description: "When CAR published the release on datos.gov.co."
+        data_tests:
+          - not_null

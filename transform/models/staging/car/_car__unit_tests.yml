@@ -1,0 +1,200 @@
+unit_tests:
+  - name: test_stg_car__complaints_reads_only_the_latest_complete_release
+    description: >
+      raw keeps every release, and a load that failed halfway can leave rows behind. Staging
+      reads only loads dlt finished and, of those, the latest release.
+    model: stg_car__complaints
+    given:
+      - input: source('dlt', '_dlt_loads')
+        rows:
+          - {load_id: "january", status: 0}
+          - {load_id: "november", status: 0}
+          # "december" failed before dlt listed it; "march" is listed but did not finish.
+          - {load_id: "march", status: 1}
+      - input: source('car', 'car_complaints')
+        rows:
+          - {item: "1", tema: "january", _dlt_load_id: "january", _release_at: "2026-01-21 16:56:44"}
+          - {item: "1", tema: "november", _dlt_load_id: "november", _release_at: "2026-11-10 20:31:22"}
+          - {item: "2", tema: "november", _dlt_load_id: "november", _release_at: "2026-11-10 20:31:22"}
+          - {item: "3", tema: "december", _dlt_load_id: "december", _release_at: "2026-12-01 00:00:00"}
+          - {item: "4", tema: "march", _dlt_load_id: "march", _release_at: "2027-03-01 00:00:00"}
+    expect:
+      rows:
+        - {complaint_id: 1, theme: "november", released_at: "2026-11-10 20:31:22"}
+        - {complaint_id: 2, theme: "november", released_at: "2026-11-10 20:31:22"}
+
+  - name: test_stg_car__complaints_types_ids_and_dates
+    model: stg_car__complaints
+    given:
+      - input: source('dlt', '_dlt_loads')
+        rows:
+          - {load_id: "november", status: 0}
+      - input: source('car', 'car_complaints')
+        rows:
+          - item: "63277"
+            fecha_radicaci_n: "2024-02-09T00:00:00.000"
+            fecha_vencimiento: "2026-12-01T00:00:00.000"
+            fecha_respuesta_final: "2024-05-31T00:00:00.000"
+            _dlt_load_id: "november"
+            _release_at: "2026-11-10 20:31:22"
+    expect:
+      rows:
+        - {complaint_id: 63277, filed_on: 2024-02-09, due_on: 2026-12-01, answered_on: 2024-05-31}
+
+  - name: test_stg_car__complaints_turns_disguised_nulls_into_null
+    description: >
+      CAR publishes no empty cells: a missing value comes as "Sin datos", and since the release
+      of 2026-11-10 an unverified place comes as "No verificado". Both mean the value is unknown,
+      in any text column.
+    model: stg_car__complaints
+    given:
+      - input: source('dlt', '_dlt_loads')
+        rows:
+          - {load_id: "november", status: 0}
+      - input: source('car', 'car_complaints')
+        rows:
+          - item: "1"
+            municipio: "No verificado"
+            vereda: "Sin datos"
+            finaliz_en: "Sin datos"
+            serie: "Sin datos"
+            subserie: "Sin datos"
+            canal: "Sin datos"
+            _dlt_load_id: "november"
+            _release_at: "2026-11-10 20:31:22"
+          - item: "2"
+            municipio: "Girardot"
+            vereda: "No verificado"
+            finaliz_en: "Apertura de expediente"
+            serie: "PROCESOS"
+            subserie: "Autos"
+            canal: "Oficio"
+            _dlt_load_id: "november"
+            _release_at: "2026-11-10 20:31:22"
+    expect:
+      rows:
+        - complaint_id: 1
+          municipality_name: null
+          vereda: null
+          closed_with: null
+          records_series: null
+          records_subseries: null
+          channel: null
+        - complaint_id: 2
+          municipality_name: "Girardot"
+          vereda: null
+          closed_with: "Apertura de expediente"
+          records_series: "PROCESOS"
+          records_subseries: "Autos"
+          channel: "Oficio"
+
+  - name: test_stg_car__complaints_normalizes_whitespace
+    description: >
+      Some themes separate words with a non-breaking space, and some names repeat spaces, so
+      the same value would group apart from itself.
+    model: stg_car__complaints
+    given:
+      - input: source('dlt', '_dlt_loads')
+        rows:
+          - {load_id: "november", status: 0}
+      - input: source('car', 'car_complaints')
+        rows:
+          - {item: "1", tema: "Afectación - Queja Ambiental\xa0agua", vereda: "LA  SONORA", _dlt_load_id: "november", _release_at: "2026-11-10 20:31:22"}
+          - {item: "2", tema: " Afectación  - Queja\xa0\xa0Ambiental Suelo ", vereda: "CENTRO", _dlt_load_id: "november", _release_at: "2026-11-10 20:31:22"}
+    expect:
+      rows:
+        - {complaint_id: 1, theme: "Afectación - Queja Ambiental agua", vereda: "LA SONORA"}
+        - {complaint_id: 2, theme: "Afectación - Queja Ambiental Suelo", vereda: "CENTRO"}
+
+  - name: test_stg_car__complaints_decodes_flags_and_labels
+    description: >
+      Yes and no become booleans, and a marker that means "not recorded" becomes null. A
+      resource is marked with X; an unmarked one is published as "Sin datos", and since most
+      complaints have no resource marked at all, unmarked means unknown, not "no".
+    model: stg_car__complaints
+    given:
+      - input: source('dlt', '_dlt_loads')
+        rows:
+          - {load_id: "november", status: 0}
+      - input: source('car', 'car_complaints')
+        rows:
+          - item: "1"
+            visita: "SI"
+            riesgo_salud_u_otros: "SI"
+            agua: "X"
+            aire: "Sin datos"
+            fauna: "X"
+            flora: "Sin datos"
+            suelo: "X"
+            estado_respuesta: "Respuesta en Terminos"
+            visita_existencia_afectacion: "DUDA"
+            atenci_n_preferencial: "[No Aplica]"
+            proceso_especial: "[No Aplica]"
+            _dlt_load_id: "november"
+            _release_at: "2026-11-10 20:31:22"
+          - item: "2"
+            visita: "NO"
+            riesgo_salud_u_otros: "NO"
+            agua: "Sin datos"
+            aire: "X"
+            fauna: "Sin datos"
+            flora: "X"
+            suelo: "Sin datos"
+            estado_respuesta: "Respuesta Fuera de Terminos"
+            visita_existencia_afectacion: "SI"
+            atenci_n_preferencial: "Adulto Mayor"
+            proceso_especial: "Río Bogotá"
+            _dlt_load_id: "november"
+            _release_at: "2026-11-10 20:31:22"
+          - item: "3"
+            visita: "Sin datos"
+            riesgo_salud_u_otros: "N.A"
+            agua: "Sin datos"
+            aire: "Sin datos"
+            fauna: "Sin datos"
+            flora: "Sin datos"
+            suelo: "Sin datos"
+            estado_respuesta: "Respuesta en Terminos"
+            visita_existencia_afectacion: "Sin datos"
+            atenci_n_preferencial: "No Aplica"
+            proceso_especial: "Sin datos"
+            _dlt_load_id: "november"
+            _release_at: "2026-11-10 20:31:22"
+    expect:
+      rows:
+        - complaint_id: 1
+          had_site_visit: true
+          poses_health_risk: true
+          concerns_water: true
+          concerns_air: null
+          concerns_fauna: true
+          concerns_flora: null
+          concerns_soil: true
+          is_on_time_per_car: true
+          visit_found_impact: "DUDA"
+          preferential_attention: "No Aplica"
+          special_process: "No Aplica"
+        - complaint_id: 2
+          had_site_visit: false
+          poses_health_risk: false
+          concerns_water: null
+          concerns_air: true
+          concerns_fauna: null
+          concerns_flora: true
+          concerns_soil: null
+          is_on_time_per_car: false
+          visit_found_impact: "SI"
+          preferential_attention: "Adulto Mayor"
+          special_process: "Río Bogotá"
+        - complaint_id: 3
+          had_site_visit: null
+          poses_health_risk: null
+          concerns_water: null
+          concerns_air: null
+          concerns_fauna: null
+          concerns_flora: null
+          concerns_soil: null
+          is_on_time_per_car: true
+          visit_found_impact: null
+          preferential_attention: "No Aplica"
+          special_process: null
