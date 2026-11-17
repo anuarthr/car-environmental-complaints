@@ -1,0 +1,25 @@
+[sqlfluff]
+dialect = bigquery
+templater = dbt
+max_line_length = 100
+# Staging lists columns by meaning (dates together, resources together), not simple columns
+# before computed ones.
+exclude_rules = structure.column_order
+
+[sqlfluff:templater:dbt]
+project_dir = transform
+profiles_dir = transform
+# No target here: the templater opens a BigQuery connection, so it uses the profile's default
+# (dev) on a laptop, and CI sets DBT_ENGINE_TARGET=ci for the dataset its account can read.
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower

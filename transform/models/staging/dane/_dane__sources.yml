@@ -1,0 +1,16 @@
+sources:
+  - name: dane
+    description: >
+      DANE's DIVIPOLA municipality codes, published on datos.gov.co (gdxc-w37w). A reference
+      table used only to place CAR's municipality names.
+    schema: raw
+    tables:
+      - name: divipola_municipalities
+        description: "One row per municipality per release, as text."
+        # DIVIPOLA changes only when a municipality is created or renamed, so an old release is
+        # expected and freshness is not checked.
+        columns:
+          - name: _release_at
+            description: "rowsUpdatedAt of the release on datos.gov.co, when DANE published it."
+          - name: _dlt_load_id
+            description: "The dlt load that wrote the row. Complete loads are listed in _dlt_loads."

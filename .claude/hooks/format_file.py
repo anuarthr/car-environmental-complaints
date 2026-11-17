@@ -1,8 +1,9 @@
-"""PostToolUse hook: format and lint each Python file right after Claude edits it.
+"""PostToolUse hook: format and lint each Python or dbt SQL file right after Claude edits it.
 
-Fixable problems are fixed in place. Anything ruff cannot fix is written to
-stderr with exit code 2, which Claude Code hands back to Claude so the file is
-corrected before work moves on.
+Fixable problems are fixed in place, with ruff for Python and sqlfluff for the
+SQL dbt compiles. Anything they cannot fix is written to stderr with exit code
+2, which Claude Code hands back to Claude so the file is corrected before work
+moves on.
 """
 
 from __future__ import annotations
@@ -15,7 +16,12 @@ from pathlib import Path
 from typing import Any
 
 RUFF = [sys.executable, "-m", "ruff"]
+SQLFLUFF = [sys.executable, "-m", "sqlfluff"]
 PYTHON_SUFFIXES = frozenset({".py"})
+DBT_PROJECT = Path("transform")
+# sqlfluff's dbt templater compiles the whole project and then skips macros, so linting one
+# would only cost time.
+DBT_MACROS = DBT_PROJECT / "macros"
 BLOCK = 2
 
 
@@ -34,12 +40,24 @@ def commands_for(file_path: str | None, project_dir: Path) -> list[list[str]]:
     if not path.is_absolute():
         path = project_dir / path
     path = path.resolve()
-    if not path.is_relative_to(project_dir.resolve()):
-        return []
-    if path.suffix not in PYTHON_SUFFIXES:
+    project_dir = project_dir.resolve()
+    if not path.is_relative_to(project_dir):
         return []
     target = str(path)
-    return [[*RUFF, "format", target], [*RUFF, "check", "--fix", target]]
+    if path.suffix in PYTHON_SUFFIXES:
+        return [[*RUFF, "format", target], [*RUFF, "check", "--fix", target]]
+    if is_dbt_sql(path.relative_to(project_dir)):
+        return [[*SQLFLUFF, "fix", target]]
+    return []
+
+
+def is_dbt_sql(relative: Path) -> bool:
+    """True for SQL that dbt compiles: inside the dbt project, outside its macros."""
+    return (
+        relative.suffix == ".sql"
+        and relative.is_relative_to(DBT_PROJECT)
+        and not relative.is_relative_to(DBT_MACROS)
+    )
 
 
 def run(payload: dict[str, Any], project_dir: Path) -> tuple[int, str]:
@@ -58,7 +76,7 @@ def run(payload: dict[str, Any], project_dir: Path) -> tuple[int, str]:
         if result.returncode != 0:
             failures.append((result.stdout + result.stderr).strip())
     if failures:
-        return BLOCK, "ruff found problems it could not fix:\n" + "\n".join(failures)
+        return BLOCK, "The linter found problems it could not fix:\n" + "\n".join(failures)
     return 0, ""
 
 

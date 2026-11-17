@@ -1,0 +1,55 @@
+sources:
+  - name: car
+    description: >
+      Environmental complaints filed with CAR Cundinamarca, published on datos.gov.co
+      (5ddb-j9e9) under CC BY-SA 4.0. dlt appends each release to raw as text, stamped with
+      the time CAR published it.
+    schema: raw
+    tables:
+      - name: car_complaints
+        description: >
+          One row per complaint per release. CAR replaces the whole dataset when it publishes,
+          so each release is a full copy, and a release can change complaints from earlier
+          years.
+        config:
+          loaded_at_field: _release_at
+          # CAR has published about once a year. A release older than 400 days is late; one
+          # older than 800 days means the source or the pipeline has stopped.
+          freshness:
+            warn_after: {count: 400, period: day}
+            error_after: {count: 800, period: day}
+        columns:
+          - name: _release_at
+            description: "rowsUpdatedAt of the release on datos.gov.co, when CAR published it."
+          - name: _dlt_load_id
+            description: "The dlt load that wrote the row. Complete loads are listed in _dlt_loads."
+          # Staging decodes these codes into booleans. A code it does not know would become
+          # null without a word, so a new one fails here instead.
+          - name: visita
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["SI", "NO", "Sin datos"]
+          - name: riesgo_salud_u_otros
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["SI", "NO", "N.A"]
+          - name: estado_respuesta
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["Respuesta en Terminos", "Respuesta Fuera de Terminos"]
+          - name: agua
+            data_tests: &resource_mark
+              - accepted_values:
+                  arguments:
+                    values: ["X", "Sin datos"]
+          - name: aire
+            data_tests: *resource_mark
+          - name: fauna
+            data_tests: *resource_mark
+          - name: flora
+            data_tests: *resource_mark
+          - name: suelo
+            data_tests: *resource_mark

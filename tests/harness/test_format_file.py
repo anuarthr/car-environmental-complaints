@@ -5,6 +5,7 @@ import sys
 import pytest
 
 RUFF = [sys.executable, "-m", "ruff"]
+SQLFLUFF = [sys.executable, "-m", "sqlfluff"]
 
 
 class TestFilePathFrom:
@@ -32,6 +33,29 @@ class TestCommandsFor:
     def test_relative_paths_are_resolved_against_the_project(self, format_file, tmp_path):
         commands = format_file.commands_for("ingestion/car_source.py", tmp_path)
         assert commands[0][-1] == str((tmp_path / "ingestion" / "car_source.py").resolve())
+
+    @pytest.mark.parametrize(
+        "relative",
+        ["transform/models/staging/stg_x.sql", "transform/tests/assert_x.sql"],
+    )
+    def test_dbt_sql_files_are_fixed_with_sqlfluff(self, format_file, tmp_path, relative):
+        target = tmp_path / relative
+        assert format_file.commands_for(str(target), tmp_path) == [
+            [*SQLFLUFF, "fix", str(target.resolve())],
+        ]
+
+    @pytest.mark.parametrize(
+        "relative",
+        [
+            # sqlfluff's dbt templater skips macros and files outside the dbt project, after
+            # compiling the whole project, so running it there only costs time.
+            "transform/macros/clean_text.sql",
+            ".claude/skills/profile-source/releases.sql",
+            "scratch.sql",
+        ],
+    )
+    def test_sql_that_dbt_does_not_compile_is_left_alone(self, format_file, tmp_path, relative):
+        assert format_file.commands_for(str(tmp_path / relative), tmp_path) == []
 
     @pytest.mark.parametrize("name", ["README.md", "data.csv", "pyproject.toml", "ci.yml"])
     def test_other_files_are_left_alone(self, format_file, tmp_path, name):

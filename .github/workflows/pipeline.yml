@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   load:
-    name: Load raw
+    name: Load raw and build prod
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Only main can deploy to production, and only jobs in production can act as the pipeline
@@ -48,3 +48,17 @@ jobs:
       # The runner starts empty, so dlt reads each dataset's last loaded release back from raw.
       - name: Load the datos.gov.co datasets into raw
         run: uv run --no-sync python -m ingestion.pipeline --dataset raw
+
+      - name: Build and test the production models
+        working-directory: transform
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: uv run --no-sync dbt build --target prod
+
+      # Last, so a stale source still gets its models built. Failing here is the signal that CAR
+      # has stopped publishing or that the load is broken.
+      - name: Check that the latest release is recent enough
+        working-directory: transform
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: uv run --no-sync dbt source freshness --target prod

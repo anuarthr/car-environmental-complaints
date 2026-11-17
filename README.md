@@ -32,10 +32,12 @@ Requires [uv](https://docs.astral.sh/uv/). It installs Python 3.12 and the locke
 uv sync --locked
 uv run pytest
 uv run ruff format --check . && uv run ruff check .
+uv run sqlfluff lint transform
 ```
 
 Tests run against recorded API responses and a local DuckDB file, so they need neither the
-network nor Google Cloud.
+network nor Google Cloud. They also check that the dbt project parses. Linting SQL does need
+Google credentials, because sqlfluff's dbt templater opens a BigQuery connection.
 
 ## Ingestion
 
@@ -52,6 +54,25 @@ nothing. The reasons are in [ADR 0003](docs/adr/0003-raw-ingestion.md).
 A local run uses your Application Default Credentials (`gcloud auth application-default login`).
 To load into your own Google Cloud project, change `project_id` in `.dlt/config.toml`; dlt
 creates the dataset if it does not exist.
+
+## Transformation
+
+`transform/` is a dbt project. Staging reads the latest complete release of each source, gives
+the columns English names and types, and cleans what profiling found: words that stand for a
+missing value become null, yes and no codes become booleans, and stray spaces go. The decisions
+are in [ADR 0004](docs/adr/0004-staging.md).
+
+| Who runs it | Command, from `transform/` | Builds into |
+|---|---|---|
+| You, on a laptop | `uv run dbt build` | `dev` |
+| The [CI workflow](.github/workflows/ci.yml), on each pull request | `uv run dbt build --target ci` | `ci` |
+| The Pipeline workflow, after each load | `uv run dbt build --target prod` | `prod` |
+
+Every query is capped at 1 GB billed, and a run against `prod` outside GitHub Actions stops
+before it starts. Unit tests check the cleaning rules on a few invented rows; data tests check
+the real ones. Two tests warn about records CAR dated inconsistently, which staging keeps as
+published: in the release of 2026-11-10, 198 answers and 30 deadlines come before their filing
+date.
 
 ## Data source and license
 

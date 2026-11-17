@@ -1,0 +1,25 @@
+# Connection settings that are safe to publish. Authentication is never stored here: oauth uses
+# Application Default Credentials, which come from `gcloud auth application-default login` on a
+# laptop and from Workload Identity Federation in GitHub Actions.
+car_complaints:
+  target: dev
+  outputs:
+    dev: &bigquery
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID', 'car-complaints-elt') }}"
+      dataset: dev
+      location: US
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      # A raw release weighs about 40 MB. One query billing more than 1 GB is a mistake, such as
+      # a join that multiplies rows, and fails before it costs anything.
+      maximum_bytes_billed: 1000000000
+    ci:
+      <<: *bigquery
+      dataset: ci
+    prod:
+      <<: *bigquery
+      dataset: prod
