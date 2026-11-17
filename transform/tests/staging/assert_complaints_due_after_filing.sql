@@ -3,6 +3,9 @@
 -- them.
 {{ config(severity="warn") }}
 
-select complaint_id, filed_on, due_on
+select
+    complaint_id,
+    filed_on,
+    due_on
 from {{ ref("stg_car__complaints") }}
 where due_on < filed_on

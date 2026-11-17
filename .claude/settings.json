@@ -8,8 +8,8 @@
           {
             "type": "command",
             "command": "uv run --project \"$CLAUDE_PROJECT_DIR\" python \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_file.py\"",
-            "timeout": 60,
-            "statusMessage": "Formatting and linting with ruff"
+            "timeout": 120,
+            "statusMessage": "Formatting and linting with ruff or sqlfluff"
           }
         ]
       }
