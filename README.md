@@ -68,6 +68,13 @@ are in [ADR 0004](docs/adr/0004-staging.md).
 | The [CI workflow](.github/workflows/ci.yml), on each pull request | `uv run dbt build --target ci` | `ci` |
 | The Pipeline workflow, after each load | `uv run dbt build --target prod` | `prod` |
 
+Intermediate models count time in Colombian business days, the unit of legal answer terms.
+Public holidays come from a versioned seed that `uv run python -m calendar_build` regenerates.
+Each complaint gets the business days to its recorded deadline and to its answer, the legal
+term for its filing date (30 days while the pandemic decree was in force, 15 otherwise) and
+whether it was answered within that term or within its double. The decisions are in
+[ADR 0005](docs/adr/0005-business-days-and-legal-terms.md).
+
 Every query is capped at 1 GB billed, and a run against `prod` outside GitHub Actions stops
 before it starts. Unit tests check the cleaning rules on a few invented rows; data tests check
 the real ones. Two tests warn about records CAR dated inconsistently, which staging keeps as
