@@ -16,6 +16,7 @@ dev = [
     "dlt[duckdb]>=1.32.0",
     "holidays>=0.108",
     "pytest>=9.2.0",
+    "pyyaml>=6.0.3",
     "requests-mock>=1.12.1",
     "ruff>=0.17.4",
     "sqlfluff>=4.5.0",

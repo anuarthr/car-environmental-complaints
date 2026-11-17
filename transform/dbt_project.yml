@@ -13,6 +13,11 @@ clean-targets: ["target", "dbt_packages"]
 flags:
   send_anonymous_usage_stats: false
 
+vars:
+  # The years seeds/colombian_holidays.csv covers: FIRST_YEAR and LAST_YEAR in calendar_build.
+  calendar_first_day: "2008-01-01"
+  calendar_last_day: "2027-12-31"
+
 # Production is built only by the Pipeline workflow on main (docs/adr/0002-cloud-access.md).
 on-run-start:
   - "{{ refuse_prod_outside_github_actions() }}"
@@ -22,4 +27,6 @@ models:
     # Each target writes to a single dataset: the CI service account cannot create datasets, so
     # layers are told apart by prefix (stg_, int_, fct_) instead of by dataset.
     staging:
+      +materialized: view
+    intermediate:
       +materialized: view

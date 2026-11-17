@@ -1,0 +1,20 @@
+seeds:
+  - name: colombian_holidays
+    description: >
+      Colombia's public holidays from 2008 to 2027, one row per date, written by
+      `uv run python -m calendar_build`. Holidays that Ley 51 de 1983 moves to a Monday appear
+      only on that Monday. Do not edit by hand: a test compares the file with the generator.
+    config:
+      column_types:
+        holiday_on: date
+        holiday_name: string
+    columns:
+      - name: holiday_on
+        description: "Date of the holiday."
+        data_tests:
+          - unique
+          - not_null
+      - name: holiday_name
+        description: "Holiday name in Spanish; two holidays on one date are separated by a semicolon."
+        data_tests:
+          - not_null

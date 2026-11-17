@@ -7,7 +7,11 @@ most holidays to the following Monday, and Holy Thursday and Good Friday follow 
 from datetime import date
 from pathlib import Path
 
+import yaml
+
 from calendar_build import holidays_seed
+
+DBT_PROJECT = Path(__file__).resolve().parents[2] / "transform" / "dbt_project.yml"
 
 # Easter 2024 was on March 31.
 HOLIDAYS_2024 = {
@@ -96,6 +100,13 @@ class TestSeedFile:
 
         text = output.read_text(encoding="utf-8")
         assert text.startswith("holiday_on,holiday_name\n2008-01-01,Año Nuevo\n")
+
+    def test_the_dbt_calendar_spans_the_years_of_the_seed(self):
+        # The calendar model generates one row per date between these vars; a date it covers
+        # without holidays would count every holiday as a business day.
+        project = yaml.safe_load(DBT_PROJECT.read_text(encoding="utf-8"))
+        assert project["vars"]["calendar_first_day"] == f"{holidays_seed.FIRST_YEAR}-01-01"
+        assert project["vars"]["calendar_last_day"] == f"{holidays_seed.LAST_YEAR}-12-31"
 
     def test_the_versioned_seed_is_what_the_generator_writes(self):
         # Fails when someone edits the seed by hand, or when an update of the holidays library
