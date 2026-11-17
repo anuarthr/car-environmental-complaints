@@ -1,0 +1,28 @@
+models:
+  - name: int_complaints__deadlines
+    description: >
+      One row per complaint with the time from filing to the recorded deadline and to the
+      answer, in calendar days and in Colombian business days. Business days are counted from
+      the day after filing, as legal terms are. Dates CAR recorded before the filing date give
+      negative counts.
+    columns:
+      - name: complaint_id
+        data_tests:
+          - unique
+          - not_null
+      - name: calendar_days_to_due
+        data_tests:
+          - not_null
+      - name: business_days_to_due
+        description: &outside_calendar >
+          Null only when a date falls outside the calendar: widen FIRST_YEAR and LAST_YEAR in
+          calendar_build and the calendar vars in dbt_project.yml.
+        data_tests:
+          - not_null
+      - name: calendar_days_to_answer
+        data_tests:
+          - not_null
+      - name: business_days_to_answer
+        description: *outside_calendar
+        data_tests:
+          - not_null
