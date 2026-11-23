@@ -1,0 +1,67 @@
+unit_tests:
+  - name: test_fct_complaints_finds_each_municipality_code
+    description: >
+      Names are looked up in the curated seed exactly as staging spells them. A district of
+      Bogotá takes Bogotá's code, and a complaint with no municipality keeps a null code
+      instead of being dropped.
+    model: fct_complaints
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 1, municipality_name: LA VEGA}
+          - {complaint_id: 2, municipality_name: LOCALIDAD DE USME}
+          - {complaint_id: 3, municipality_name: null}
+      - input: ref('int_complaints__deadlines')
+        rows:
+          - {complaint_id: 1}
+          - {complaint_id: 2}
+          - {complaint_id: 3}
+      - input: ref('car_municipality_codes')
+        rows:
+          - {car_municipality_name: LA VEGA, municipality_code: "25402"}
+          - {car_municipality_name: LOCALIDAD DE USME, municipality_code: "11001"}
+    expect:
+      rows:
+        - {complaint_id: 1, municipality_code: "25402"}
+        - {complaint_id: 2, municipality_code: "11001"}
+        - {complaint_id: 3, municipality_code: null}
+
+  - name: test_fct_complaints_flags_full_answers_and_impossible_dates
+    description: >
+      Only a De Fondo answer settles the complaint: Parcial, Otra and Requerimiento do not.
+      Dates CAR recorded before the filing date are flagged, so a measure can leave them out
+      without deleting the complaint.
+    model: fct_complaints
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 1, filed_on: 2024-03-01, due_on: 2024-03-22, answered_on: 2024-03-10, answer_type: De Fondo}
+          - {complaint_id: 2, filed_on: 2024-03-01, due_on: 2024-02-28, answered_on: 2024-02-27, answer_type: Parcial}
+          - {complaint_id: 3, filed_on: 2024-03-01, due_on: 2024-03-22, answered_on: 2024-03-01, answer_type: Otra}
+      - input: ref('int_complaints__deadlines')
+        rows:
+          - {complaint_id: 1}
+          - {complaint_id: 2}
+          - {complaint_id: 3}
+      - input: ref('car_municipality_codes')
+        rows: []
+    expect:
+      rows:
+        - {complaint_id: 1, is_full_answer: true, is_answered_before_filing: false, is_due_before_filing: false}
+        - {complaint_id: 2, is_full_answer: false, is_answered_before_filing: true, is_due_before_filing: true}
+        - {complaint_id: 3, is_full_answer: false, is_answered_before_filing: false, is_due_before_filing: false}
+
+  - name: test_dim_date_numbers_weekdays_from_monday
+    description: >
+      BigQuery's dayofweek counts from Sunday; the dimension uses ISO weekdays, Monday 1 to
+      Sunday 7. Easter Sunday 2024 closes March and the first quarter.
+    model: dim_date
+    given:
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2024-03-31, is_weekend: true, is_business_day: false}
+          - {calendar_date: 2024-04-01, is_weekend: false, is_business_day: true}
+    expect:
+      rows:
+        - {calendar_date: 2024-03-31, calendar_year: 2024, calendar_quarter: 1, calendar_month: 3, month_start: 2024-03-01, iso_weekday: 7}
+        - {calendar_date: 2024-04-01, calendar_year: 2024, calendar_quarter: 2, calendar_month: 4, month_start: 2024-04-01, iso_weekday: 1}

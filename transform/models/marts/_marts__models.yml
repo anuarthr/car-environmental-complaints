@@ -1,0 +1,160 @@
+models:
+  - name: fct_complaints
+    description: >
+      One row per complaint in CAR's latest complete release: when it was filed, where, about
+      what, how and when it was answered, and how that compares with the deadline CAR recorded
+      and with the legal term. Office, channel and the other attributes with no attributes of
+      their own stay here as text instead of in a dimension each.
+    columns:
+      - name: complaint_id
+        description: "CAR's item number, unique within a release."
+        data_tests:
+          - unique
+          - not_null
+      - name: filed_on
+        description: "Date the complaint was filed. Joins dim_date."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: calendar_date
+      - name: due_on
+        description: "Deadline CAR recorded."
+      - name: answered_on
+        description: "Date of the final answer."
+      - name: municipality_code
+        description: >
+          DANE code of the municipality, from car_municipality_codes. Joins dim_municipality.
+          Null when CAR did not record or did not verify the municipality.
+        data_tests:
+          - not_null:
+              config:
+                where: "car_municipality_name is not null"
+          - relationships:
+              arguments:
+                to: ref('dim_municipality')
+                field: municipality_code
+      - name: car_municipality_name
+        description: "Municipality as CAR names it; for Bogotá it often names the district."
+      - name: vereda
+        description: "Rural district (vereda) as CAR names it."
+      - name: theme
+        description: "Complaint theme as CAR names it. Joins dim_theme for the resource."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_theme')
+                field: theme
+      - name: regional_office
+        description: "CAR office in charge of the complaint."
+        data_tests:
+          - not_null
+      - name: channel
+        description: "How the complaint reached CAR."
+        data_tests:
+          - not_null
+      - name: petition_type
+        description: "An environmental complaint, or one about offensive odors."
+      - name: filer_type
+        description: "NATURAL (a person), JURIDICA (an organization) or INTERNO (CAR itself)."
+      - name: preferential_attention
+        description: "Group entitled to preferential attention, or No Aplica."
+      - name: special_process
+        description: "Special process the complaint belongs to, or No Aplica."
+      - name: poses_health_risk
+        description: "Whether the complaint poses a risk to health or other. Null when not assessed."
+      - name: had_site_visit
+        description: "Whether CAR visited the site. Null when not recorded."
+      - name: visit_found_impact
+        description: "Whether the visit found environmental harm: SI, NO or DUDA."
+      - name: answer_type
+        description: "De Fondo (a substantive answer), Parcial, Otra or Requerimiento."
+      - name: is_full_answer
+        description: "True for a De Fondo answer, the only kind that settles the complaint."
+        data_tests:
+          - not_null
+      - name: current_status
+        description: "Status of the complaint when CAR published the release."
+      - name: closed_with
+        description: "How the complaint was closed."
+      - name: calendar_days_to_due
+        description: "Calendar days from filing to the recorded deadline; negative when it comes first."
+      - name: business_days_to_due
+        description: "Business days from filing to the recorded deadline."
+      - name: calendar_days_to_answer
+        description: "Calendar days from filing to the answer; negative when the answer comes first."
+      - name: business_days_to_answer
+        description: "Business days from filing to the answer."
+      - name: legal_term_business_days
+        description: "Business days the law gave to answer: 30 from 2020-03-28 to 2022-05-17, 15 otherwise."
+      - name: legal_due_on
+        description: "The business day the legal term ends."
+      - name: due_matches_legal_term
+        description: "Whether the deadline CAR recorded is the legal term."
+      - name: is_on_time_per_car
+        description: "CAR's own label: answered on or before the deadline it recorded."
+        data_tests:
+          - not_null
+      - name: answered_within_legal_term
+        description: "Answered by legal_due_on. Null when the answer is dated before filing."
+      - name: answered_within_double_term
+        description: "Answered within twice the legal term. Null when the answer is dated before filing."
+      - name: is_answered_before_filing
+        description: "The answer is dated before the filing date, a recording error."
+        data_tests:
+          - not_null
+      - name: is_due_before_filing
+        description: "The recorded deadline is before the filing date, a recording error."
+        data_tests:
+          - not_null
+      - name: released_at
+        description: "When CAR published the release on datos.gov.co."
+
+  - name: dim_date
+    description: "One row per day of the calendar the holiday seed covers, with its parts and kind of day."
+    columns:
+      - name: calendar_date
+        data_tests:
+          - unique
+          - not_null
+      - name: calendar_year
+      - name: calendar_quarter
+      - name: calendar_month
+      - name: month_start
+        description: "First day of the month, to group by month."
+      - name: iso_weekday
+        description: "1 for Monday to 7 for Sunday."
+      - name: is_weekend
+      - name: holiday_name
+        description: "Name of the public holiday, null on other days."
+      - name: is_business_day
+        description: "Neither a weekend nor a public holiday."
+
+  - name: dim_municipality
+    description: >
+      One row per municipality in DANE's DIVIPOLA, with its department and the coordinates of
+      its seat.
+    columns:
+      - name: municipality_code
+        data_tests:
+          - unique
+          - not_null
+      - name: municipality_name
+        description: "Name as DANE writes it."
+      - name: municipality_type
+      - name: department_code
+      - name: department_name
+      - name: latitude
+      - name: longitude
+
+  - name: dim_theme
+    description: "One row per complaint theme, with the resource it names (car_theme_resources)."
+    columns:
+      - name: theme
+        data_tests:
+          - unique
+          - not_null
+      - name: resource
+        description: "water, air, fauna, flora, soil, several, or null when the theme names none."

@@ -30,3 +30,7 @@ models:
       +materialized: view
     intermediate:
       +materialized: view
+    # Marts are what the dashboard reads: tables, so each chart scans a small table instead of
+    # rerunning the views down to raw.
+    marts:
+      +materialized: table
