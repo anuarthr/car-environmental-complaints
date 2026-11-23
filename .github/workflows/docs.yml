@@ -1,0 +1,78 @@
+name: Docs
+
+on:
+  # After each successful Pipeline run, so the published docs describe what prod holds.
+  workflow_run:
+    workflows: [Pipeline]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Each run replaces the whole site, so a newer run makes an older one pointless.
+concurrency:
+  group: docs
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Generate the dbt docs from prod
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The catalog is read from prod, which only the pipeline service account can see, and only
+    # jobs in production can act as it (docs/adr/0002-cloud-access.md).
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # The commit the Pipeline built, not whatever main points to by now.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install the locked environment without the dev tools
+        run: uv sync --locked --no-dev
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_PIPELINE_SERVICE_ACCOUNT }}
+
+      # --static writes one page with the manifest and the catalog inside, which Pages serves
+      # as is.
+      - name: Generate the docs with the catalog of prod
+        working-directory: transform
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: uv run --no-sync dbt docs generate --target prod --static
+
+      - name: Keep only the page
+        run: |
+          mkdir site
+          cp transform/target/static_index.html site/index.html
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
