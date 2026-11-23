@@ -1,0 +1,54 @@
+models:
+  - name: int_complaints__deadlines
+    description: >
+      One row per complaint with the time from filing to the recorded deadline and to the
+      answer, in calendar days and in Colombian business days. Business days are counted from
+      the day after filing, as legal terms are. Dates CAR recorded before the filing date give
+      negative counts.
+    columns:
+      - name: complaint_id
+        data_tests:
+          - unique
+          - not_null
+      - name: calendar_days_to_due
+        data_tests:
+          - not_null
+      - name: business_days_to_due
+        description: &outside_calendar >
+          Null only when a date falls outside the calendar: widen FIRST_YEAR and LAST_YEAR in
+          calendar_build and the calendar vars in dbt_project.yml.
+        data_tests:
+          - not_null
+      - name: calendar_days_to_answer
+        data_tests:
+          - not_null
+      - name: business_days_to_answer
+        description: *outside_calendar
+        data_tests:
+          - not_null
+      - name: legal_term_business_days
+        description: >
+          Business days the law gave to answer, by filing date: 30 from 2020-03-28 to
+          2022-05-17 (Decreto Legislativo 491 de 2020, art. 5, until Ley 2207 de 2022), 15
+          otherwise (Ley 1437 de 2011, art. 14).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [15, 30]
+                quote: false
+      - name: legal_due_on
+        description: "The business day the legal term ends."
+        data_tests:
+          - not_null
+      - name: due_matches_legal_term
+        description: "Whether the deadline CAR recorded is the legal term."
+        data_tests:
+          - not_null
+      - name: answered_within_legal_term
+        description: >
+          Answered on or before legal_due_on. The strictest reading: the law allowed an
+          extension the data does not record. Null when the answer is dated before filing.
+      - name: answered_within_double_term
+        description: >
+          Answered within twice the legal term, the longest extension the law allowed. The most
+          generous reading. Null when the answer is dated before filing.

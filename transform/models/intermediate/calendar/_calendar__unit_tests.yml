@@ -1,0 +1,32 @@
+unit_tests:
+  - name: test_int_calendar__business_days_skips_weekends_and_holidays
+    description: >
+      Holy Week 2024: San José moved to Monday the 25th, then Holy Thursday and Good Friday. The
+      index counts business days up to and including each date, so it stands still on weekends
+      and holidays.
+    model: int_calendar__business_days
+    overrides:
+      vars:
+        calendar_first_day: "2024-03-22"
+        calendar_last_day: "2024-04-02"
+    given:
+      - input: ref('colombian_holidays')
+        rows:
+          - {holiday_on: 2024-03-25, holiday_name: "Día de San José (observado)"}
+          - {holiday_on: 2024-03-28, holiday_name: "Jueves Santo"}
+          - {holiday_on: 2024-03-29, holiday_name: "Viernes Santo"}
+          - {holiday_on: 2024-05-01, holiday_name: "Día del Trabajo"}
+    expect:
+      rows:
+        - {calendar_date: 2024-03-22, is_weekend: false, holiday_name: null, is_business_day: true, business_day_index: 1}
+        - {calendar_date: 2024-03-23, is_weekend: true, holiday_name: null, is_business_day: false, business_day_index: 1}
+        - {calendar_date: 2024-03-24, is_weekend: true, holiday_name: null, is_business_day: false, business_day_index: 1}
+        - {calendar_date: 2024-03-25, is_weekend: false, holiday_name: "Día de San José (observado)", is_business_day: false, business_day_index: 1}
+        - {calendar_date: 2024-03-26, is_weekend: false, holiday_name: null, is_business_day: true, business_day_index: 2}
+        - {calendar_date: 2024-03-27, is_weekend: false, holiday_name: null, is_business_day: true, business_day_index: 3}
+        - {calendar_date: 2024-03-28, is_weekend: false, holiday_name: "Jueves Santo", is_business_day: false, business_day_index: 3}
+        - {calendar_date: 2024-03-29, is_weekend: false, holiday_name: "Viernes Santo", is_business_day: false, business_day_index: 3}
+        - {calendar_date: 2024-03-30, is_weekend: true, holiday_name: null, is_business_day: false, business_day_index: 3}
+        - {calendar_date: 2024-03-31, is_weekend: true, holiday_name: null, is_business_day: false, business_day_index: 3}
+        - {calendar_date: 2024-04-01, is_weekend: false, holiday_name: null, is_business_day: true, business_day_index: 4}
+        - {calendar_date: 2024-04-02, is_weekend: false, holiday_name: null, is_business_day: true, business_day_index: 5}

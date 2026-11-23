@@ -1,0 +1,24 @@
+models:
+  - name: int_calendar__business_days
+    description: >
+      One row per date from var calendar_first_day to var calendar_last_day, with Colombia's
+      business days: not a Saturday, a Sunday or a public holiday. The business days after date
+      A and up to date B are business_day_index(B) minus business_day_index(A), the way legal
+      terms are counted from the day after filing.
+    columns:
+      - name: calendar_date
+        data_tests:
+          - unique
+          - not_null
+      - name: is_weekend
+        description: "Saturday or Sunday."
+      - name: holiday_name
+        description: "Name of the public holiday on this date, if any."
+      - name: is_business_day
+        description: "Neither a weekend day nor a public holiday."
+        data_tests:
+          - not_null
+      - name: business_day_index
+        description: "Business days from calendar_first_day up to and including this date."
+        data_tests:
+          - not_null

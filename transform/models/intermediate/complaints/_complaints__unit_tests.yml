@@ -1,0 +1,158 @@
+unit_tests:
+  - name: test_int_complaints__deadlines_counts_days_after_filing
+    description: >
+      Complaint 63277 of the release of 2026-11-10: filed on Friday 2024-02-09 and answered on
+      2024-05-31, 75 business days later by a count made by hand (14 in February, 18 in March
+      without San José and Holy Week, 22 in April, 21 in May without the 1st and the 13th).
+      15 business days after filing is 2024-03-01. The calendar indexes are the real ones,
+      relative to 2024-02-09.
+    model: int_complaints__deadlines
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 63277, filed_on: 2024-02-09, due_on: 2024-03-01, answered_on: 2024-05-31}
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2024-02-09, business_day_index: 1000}
+          - {calendar_date: 2024-03-01, business_day_index: 1015}
+          - {calendar_date: 2024-05-31, business_day_index: 1075}
+    expect:
+      rows:
+        - complaint_id: 63277
+          calendar_days_to_due: 21
+          business_days_to_due: 15
+          calendar_days_to_answer: 112
+          business_days_to_answer: 75
+
+  - name: test_int_complaints__deadlines_keeps_impossible_dates_as_negative_counts
+    description: >
+      198 answers and 30 deadlines are dated before their filing date. They keep their sign,
+      so they stay visible instead of looking like same-day answers.
+    model: int_complaints__deadlines
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 1, filed_on: 2024-03-01, due_on: 2024-02-28, answered_on: 2024-02-27}
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2024-02-27, business_day_index: 1012}
+          - {calendar_date: 2024-02-28, business_day_index: 1013}
+          - {calendar_date: 2024-03-01, business_day_index: 1015}
+    expect:
+      rows:
+        - complaint_id: 1
+          calendar_days_to_due: -2
+          business_days_to_due: -2
+          calendar_days_to_answer: -3
+          business_days_to_answer: -3
+
+  - name: test_int_complaints__deadlines_takes_the_legal_term_from_the_filing_date
+    description: >
+      15 business days (Ley 1437 de 2011, art. 14), except for complaints filed while Decreto
+      Legislativo 491 de 2020, art. 5, was in force, from 2020-03-28 until Ley 2207 de 2022
+      repealed it on 2022-05-18: 30 days. The boundaries are the dates the decree and the
+      repeal took effect.
+    model: int_complaints__deadlines
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 1, filed_on: 2020-03-27, due_on: 2020-03-27, answered_on: 2020-03-27}
+          - {complaint_id: 2, filed_on: 2020-03-28, due_on: 2020-03-28, answered_on: 2020-03-28}
+          - {complaint_id: 3, filed_on: 2022-05-17, due_on: 2022-05-17, answered_on: 2022-05-17}
+          - {complaint_id: 4, filed_on: 2022-05-18, due_on: 2022-05-18, answered_on: 2022-05-18}
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2020-03-27, is_business_day: true, business_day_index: 100}
+          - {calendar_date: 2020-03-28, is_business_day: false, business_day_index: 100}
+          - {calendar_date: 2022-05-17, is_business_day: true, business_day_index: 600}
+          - {calendar_date: 2022-05-18, is_business_day: true, business_day_index: 601}
+    expect:
+      rows:
+        - {complaint_id: 1, legal_term_business_days: 15}
+        - {complaint_id: 2, legal_term_business_days: 30}
+        - {complaint_id: 3, legal_term_business_days: 30}
+        - {complaint_id: 4, legal_term_business_days: 15}
+
+  - name: test_int_complaints__deadlines_compares_with_the_legal_term
+    description: >
+      Complaint 63277: its legal deadline is 2024-03-01, 15 business days after filing, but CAR
+      recorded 2026-12-01 and labeled the answer of 2024-05-31 on time. The law allows doubling
+      the term when the filer is told, which the data does not record, so the double term gives
+      the most generous reading. An answer on the Saturday after the legal deadline is late,
+      even though no business day passed.
+    model: int_complaints__deadlines
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 63277, filed_on: 2024-02-09, due_on: 2026-12-01, answered_on: 2024-05-31}
+          - {complaint_id: 5, filed_on: 2024-02-09, due_on: 2024-03-01, answered_on: 2024-03-02}
+          - {complaint_id: 6, filed_on: 2024-02-09, due_on: 2024-03-01, answered_on: 2024-03-01}
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2024-02-09, is_business_day: true, business_day_index: 1000}
+          - {calendar_date: 2024-03-01, is_business_day: true, business_day_index: 1015}
+          - {calendar_date: 2024-03-02, is_business_day: false, business_day_index: 1015}
+          - {calendar_date: 2024-03-22, is_business_day: true, business_day_index: 1030}
+          - {calendar_date: 2024-05-31, is_business_day: true, business_day_index: 1075}
+          - {calendar_date: 2026-12-01, is_business_day: true, business_day_index: 1685}
+    expect:
+      rows:
+        - complaint_id: 63277
+          legal_due_on: 2024-03-01
+          due_matches_legal_term: false
+          answered_within_legal_term: false
+          answered_within_double_term: false
+        - complaint_id: 5
+          legal_due_on: 2024-03-01
+          due_matches_legal_term: true
+          answered_within_legal_term: false
+          answered_within_double_term: true
+        - complaint_id: 6
+          legal_due_on: 2024-03-01
+          due_matches_legal_term: true
+          answered_within_legal_term: true
+          answered_within_double_term: true
+
+  - name: test_int_complaints__deadlines_leaves_impossible_answers_unjudged
+    description: >
+      An answer dated before the filing date is a recording error: whether it came on time is
+      unknown, and counting it as on time would inflate compliance.
+    model: int_complaints__deadlines
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 7, filed_on: 2024-02-09, due_on: 2024-03-01, answered_on: 2024-02-08}
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2024-02-08, is_business_day: true, business_day_index: 999}
+          - {calendar_date: 2024-02-09, is_business_day: true, business_day_index: 1000}
+          - {calendar_date: 2024-03-01, is_business_day: true, business_day_index: 1015}
+          - {calendar_date: 2024-03-22, is_business_day: true, business_day_index: 1030}
+    expect:
+      rows:
+        - complaint_id: 7
+          legal_due_on: 2024-03-01
+          due_matches_legal_term: true
+          answered_within_legal_term: null
+          answered_within_double_term: null
+
+  - name: test_int_complaints__deadlines_never_drops_a_complaint
+    description: >
+      A date the calendar does not cover leaves its count null instead of removing the
+      complaint, so every complaint stays and a not_null test points at the gap.
+    model: int_complaints__deadlines
+    given:
+      - input: ref('stg_car__complaints')
+        rows:
+          - {complaint_id: 2, filed_on: 2027-12-30, due_on: 2028-01-21, answered_on: 2027-12-31}
+      - input: ref('int_calendar__business_days')
+        rows:
+          - {calendar_date: 2027-12-30, business_day_index: 5000}
+          - {calendar_date: 2027-12-31, business_day_index: 5001}
+    expect:
+      rows:
+        - complaint_id: 2
+          calendar_days_to_due: 22
+          business_days_to_due: null
+          calendar_days_to_answer: 1
+          business_days_to_answer: 1

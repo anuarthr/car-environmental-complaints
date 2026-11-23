@@ -24,6 +24,7 @@ uv run ruff format .         # format
 uv run ruff check .          # lint
 uv run sqlfluff lint transform  # lint the dbt SQL (needs Google credentials)
 cd transform && uv run dbt build  # build and test the models in dev
+uv run python -m calendar_build  # regenerate the holiday seed
 ```
 
 ## How work is done here
@@ -66,6 +67,10 @@ cd transform && uv run dbt build  # build and test the models in dev
   - `tema` contains non-breaking spaces (`\xa0`).
   - 198 answers are dated before their filing date, and 30 deadlines fall before it. One
     deadline (`item` 63277, filed on 2024-02-09) falls on 2026-12-01.
+  - Only 26.7% of recorded deadlines fall 15 business days after filing; the rest cluster at 30
+    and at 41 to 45, 60, 75 and 86 to 90, by a rule the data does not show. In 2020 and 2021
+    most are 30, the term of Decreto Legislativo 491 de 2020. `estado_respuesta` measures
+    against these recorded deadlines, not against the law.
   - Municipalities come as names without a department, so joining them to DIVIPOLA needs a
     curated mapping. DIVIPOLA repeats names across departments (four `BUENAVISTA`) and writes
     coordinates with a decimal comma.
