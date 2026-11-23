@@ -38,6 +38,11 @@ uv run python -m calendar_build  # regenerate the holiday seed
 - **Comments explain business rules and decisions**, not language syntax.
 - **Profile before staging.** Run the `profile-source` skill on a raw table before writing or
   changing its staging model, and after a new release.
+- **New models follow the `new-dbt-model` skill**: grain first, the unit test before the model,
+  red against a typed stub, then data tests and a reconciliation with known figures.
+- **Review before the pull request.** After changing models, seeds or their tests, ask the
+  `model-reviewer` subagent (`.claude/agents/`) for a read-only review, and fix or answer each
+  finding.
 - **Hooks enforce the basics** (`.claude/settings.json`): every edited Python file is formatted
   and linted with ruff, every edited dbt SQL file with sqlfluff, and a turn cannot end while the
   test suite fails or the dbt project does not parse. Fix the cause; never work around a hook.
