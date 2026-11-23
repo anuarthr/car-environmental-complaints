@@ -18,3 +18,70 @@ seeds:
         description: "Holiday name in Spanish; two holidays on one date are separated by a semicolon."
         data_tests:
           - not_null
+
+  - name: car_municipality_codes
+    description: >
+      DANE's code for every municipality name in CAR's complaints, curated by hand. CAR writes
+      names without a department, and DIVIPOLA repeats them across departments, so a name is
+      matched within CAR's jurisdiction: Cundinamarca, the Boyacá municipalities its
+      Chiquinquirá office serves, and Bogotá. A name a new release brings fails the not_null
+      test on fct_complaints.municipality_code until a row is added here.
+    config:
+      column_types:
+        car_municipality_name: string
+        municipality_code: string
+        matched_by: string
+    columns:
+      - name: car_municipality_name
+        description: "Name as stg_car__complaints spells it, accents and case included."
+        data_tests:
+          - unique
+          - not_null
+      - name: municipality_code
+        description: "DANE's five-digit code."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_dane__municipalities')
+                field: municipality_code
+      - name: matched_by
+        description: >
+          How the code was found. name: the only DIVIPOLA municipality with that name once
+          accents and case are ignored. name and regional office: the only one of several
+          namesakes in the department of the CAR office that handles the complaints. DANE name:
+          DANE writes it differently (BOGOTÁ, D.C., VILLA DE SAN DIEGO DE UBATÉ, VILLAGÓMEZ).
+          Bogotá locality: one of the districts of Bogotá, which DIVIPOLA does not divide.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["name", "name and regional office", "DANE name", "Bogotá locality"]
+
+  - name: car_theme_resources
+    description: >
+      The natural resource each complaint theme names, curated by hand. CAR's resource marks are
+      missing on three in four complaints, so the theme is the only complete source. Where the
+      marks exist they back the choices: CAR marked air on 246 of the 262 marked noise
+      complaints and on 148 of the 206 marked odor complaints, and fauna on 107 of the 120
+      marked voluntary surrenders of wild animals. Seizures (Decomisos) name no resource: CAR
+      marked flora on 386 of 535 and fauna on 123.
+    config:
+      column_types:
+        theme: string
+        resource: string
+    columns:
+      - name: theme
+        description: "Theme as stg_car__complaints spells it."
+        data_tests:
+          - unique
+          - not_null
+      - name: resource
+        description: >
+          water, air, fauna, flora or soil when the theme names one resource, several when it
+          says more than one, and null when it names none (requests for information, permits
+          for no single resource, seizures).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["water", "air", "fauna", "flora", "soil", "several"]
