@@ -81,6 +81,11 @@ the real ones. Two tests warn about records CAR dated inconsistently, which stag
 published: in the release of 2026-11-10, 198 answers and 30 deadlines come before their filing
 date.
 
+The [dbt docs](https://anuarthr.github.io/car-environmental-complaints/) describe every model,
+column and test, and draw the lineage from the sources to the marts. The
+[Docs workflow](.github/workflows/docs.yml) publishes them from `prod` after each pipeline run
+([ADR 0007](docs/adr/0007-publish-dbt-docs.md)).
+
 ## Data source and license
 
 - **Quejas Ambientales CAR Cundinamarca**, published by CAR on
