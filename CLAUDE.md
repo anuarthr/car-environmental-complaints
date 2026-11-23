@@ -73,7 +73,11 @@ uv run python -m calendar_build  # regenerate the holiday seed
     against these recorded deadlines, not against the law.
   - Municipalities come as names without a department, so joining them to DIVIPOLA needs a
     curated mapping. DIVIPOLA repeats names across departments (four `BUENAVISTA`) and writes
-    coordinates with a decimal comma.
+    coordinates with a decimal comma. CAR also names 21 districts of Bogotá (`LOCALIDAD DE
+    USME`), which DIVIPOLA does not divide.
+  - Every municipality name and theme must have a row in `transform/seeds/car_municipality_codes.csv`
+    and `car_theme_resources.csv`; a new one fails the fact table's tests. Add the row by hand,
+    with its evidence, and never match names automatically.
 
 ## Cloud rules
 
