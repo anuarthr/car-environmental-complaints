@@ -158,3 +158,66 @@ models:
           - not_null
       - name: resource
         description: "water, air, fauna, flora, soil, several, or null when the theme names none."
+
+  - name: mart_monthly_compliance
+    description: >
+      Complaints and their answers by filing month and regional office. Every measure is a
+      count, so it adds up across months and offices: compute a rate as the ratio of summed
+      counts, for example sum(answered_within_legal_term) / sum(judged_against_legal_term),
+      never as an average of rates.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "format('%t|%t', filed_month, regional_office)"
+    columns:
+      - name: filed_month
+        description: "First day of the month the complaints were filed."
+        data_tests:
+          - not_null
+      - name: regional_office
+        description: "CAR office in charge."
+        data_tests:
+          - not_null
+      - name: complaints
+        description: "Complaints filed."
+      - name: answered_on_time_per_car
+        description: "Answered by the deadline CAR recorded, by CAR's own label."
+      - name: full_answers
+        description: "Answered De Fondo, the only answer that settles a complaint."
+      - name: full_answers_on_time_per_car
+        description: "Answered De Fondo by the deadline CAR recorded."
+      - name: due_on_legal_term
+        description: "Complaints whose recorded deadline is the legal term."
+      - name: judged_against_legal_term
+        description: >
+          Complaints whose answer can be compared with the legal term: all but those answered,
+          by the record, before they were filed. The denominator of the legal on-time rate.
+      - name: answered_within_legal_term
+        description: "Answered within the legal term, the strictest reading."
+      - name: answered_within_double_term
+        description: "Answered within twice the legal term, the most generous reading."
+
+  - name: mart_municipality_summary
+    description: >
+      Complaints by municipality and by the resource their theme names, with the coordinates
+      of the municipal seat for a map. Complaints with no recorded municipality share a row
+      with a null code and no coordinates, so the counts add up to every complaint.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "format('%t|%t', municipality_code, resource)"
+    columns:
+      - name: municipality_code
+        description: "DANE code; null for complaints whose municipality CAR did not record."
+      - name: municipality_name
+        description: "Name as DANE writes it."
+      - name: department_name
+      - name: latitude
+        description: "Latitude of the municipal seat, the point a map draws."
+      - name: longitude
+      - name: resource
+        description: "Resource the theme names, or null when it names none."
+      - name: complaints
+      - name: answered_on_time_per_car
+      - name: judged_against_legal_term
+      - name: answered_within_legal_term

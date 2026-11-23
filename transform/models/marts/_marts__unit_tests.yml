@@ -65,3 +65,49 @@ unit_tests:
       rows:
         - {calendar_date: 2024-03-31, calendar_year: 2024, calendar_quarter: 1, calendar_month: 3, month_start: 2024-03-01, iso_weekday: 7}
         - {calendar_date: 2024-04-01, calendar_year: 2024, calendar_quarter: 2, calendar_month: 4, month_start: 2024-04-01, iso_weekday: 1}
+
+  - name: test_mart_monthly_compliance_counts_by_filing_month_and_office
+    description: >
+      Counts add up, so a dashboard can roll them up to any period and divide sums. An answer
+      dated before filing is neither within nor outside the legal term: it is left out of the
+      complaints judged against it, so the legal on-time rate is not inflated.
+    model: mart_monthly_compliance
+    given:
+      - input: ref('fct_complaints')
+        rows:
+          - {complaint_id: 1, filed_on: 2024-03-05, regional_office: A, is_on_time_per_car: true, is_full_answer: true, due_matches_legal_term: true, answered_within_legal_term: true, answered_within_double_term: true}
+          - {complaint_id: 2, filed_on: 2024-03-28, regional_office: A, is_on_time_per_car: false, is_full_answer: false, due_matches_legal_term: false, answered_within_legal_term: false, answered_within_double_term: true}
+          - {complaint_id: 3, filed_on: 2024-03-10, regional_office: A, is_on_time_per_car: true, is_full_answer: true, due_matches_legal_term: true, answered_within_legal_term: null, answered_within_double_term: null}
+          - {complaint_id: 4, filed_on: 2024-03-15, regional_office: B, is_on_time_per_car: true, is_full_answer: false, due_matches_legal_term: false, answered_within_legal_term: false, answered_within_double_term: false}
+          - {complaint_id: 5, filed_on: 2024-04-01, regional_office: A, is_on_time_per_car: false, is_full_answer: true, due_matches_legal_term: true, answered_within_legal_term: true, answered_within_double_term: true}
+    expect:
+      rows:
+        - {filed_month: 2024-03-01, regional_office: A, complaints: 3, answered_on_time_per_car: 2, full_answers: 2, full_answers_on_time_per_car: 2, due_on_legal_term: 2, judged_against_legal_term: 2, answered_within_legal_term: 1, answered_within_double_term: 2}
+        - {filed_month: 2024-03-01, regional_office: B, complaints: 1, answered_on_time_per_car: 1, full_answers: 0, full_answers_on_time_per_car: 0, due_on_legal_term: 0, judged_against_legal_term: 1, answered_within_legal_term: 0, answered_within_double_term: 0}
+        - {filed_month: 2024-04-01, regional_office: A, complaints: 1, answered_on_time_per_car: 0, full_answers: 1, full_answers_on_time_per_car: 0, due_on_legal_term: 1, judged_against_legal_term: 1, answered_within_legal_term: 1, answered_within_double_term: 1}
+
+  - name: test_mart_municipality_summary_places_complaints_by_resource
+    description: >
+      Complaints are counted by municipality and by the resource their theme names, with the
+      coordinates of the municipal seat for a map. Complaints with no municipality keep a row
+      with no place, so the totals still add up to every complaint.
+    model: mart_municipality_summary
+    given:
+      - input: ref('fct_complaints')
+        rows:
+          - {complaint_id: 1, municipality_code: "25402", theme: Agua, is_on_time_per_car: true, answered_within_legal_term: true}
+          - {complaint_id: 2, municipality_code: "25402", theme: Agua, is_on_time_per_car: false, answered_within_legal_term: null}
+          - {complaint_id: 3, municipality_code: "25402", theme: Solicitud, is_on_time_per_car: true, answered_within_legal_term: false}
+          - {complaint_id: 4, municipality_code: null, theme: Agua, is_on_time_per_car: true, answered_within_legal_term: true}
+      - input: ref('dim_municipality')
+        rows:
+          - {municipality_code: "25402", municipality_name: LA VEGA, department_name: CUNDINAMARCA, latitude: 4.99, longitude: -74.34}
+      - input: ref('dim_theme')
+        rows:
+          - {theme: Agua, resource: water}
+          - {theme: Solicitud, resource: null}
+    expect:
+      rows:
+        - {municipality_code: "25402", municipality_name: LA VEGA, department_name: CUNDINAMARCA, latitude: 4.99, longitude: -74.34, resource: water, complaints: 2, answered_on_time_per_car: 1, judged_against_legal_term: 1, answered_within_legal_term: 1}
+        - {municipality_code: "25402", municipality_name: LA VEGA, department_name: CUNDINAMARCA, latitude: 4.99, longitude: -74.34, resource: null, complaints: 1, answered_on_time_per_car: 1, judged_against_legal_term: 1, answered_within_legal_term: 0}
+        - {municipality_code: null, municipality_name: null, department_name: null, latitude: null, longitude: null, resource: water, complaints: 1, answered_on_time_per_car: 1, judged_against_legal_term: 1, answered_within_legal_term: 1}
