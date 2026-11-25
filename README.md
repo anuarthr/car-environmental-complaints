@@ -14,6 +14,8 @@ Corporación Autónoma Regional de Cundinamarca (CAR), Colombia. The release CAR
 4. Do the recorded deadlines match the legal term of 15 business days?
 5. Where are complaints concentrated, and which natural resource do they concern?
 
+The answers, with the limits of each figure, are in [docs/findings.md](docs/findings.md).
+
 ## Stack
 
 | Layer | Tool |
